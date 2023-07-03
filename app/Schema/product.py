@@ -1,17 +1,17 @@
 from pydantic import BaseModel, HttpUrl
 from fastapi import Form,UploadFile,File
-
-class Image(BaseModel):
-    url: HttpUrl
-    name: str
+from .user import UserOut
 
 
 class Product(BaseModel):
-    product_name: str = Form(...)
-    price: float = Form(...)
-    product_type: str  = Form(...)
-    detail: str = Form(...)
-    quantity: int = Form(...)
-    image: UploadFile | None = None
-    
-
+    id: int
+    product_name: str
+    price: float
+    product_type: str 
+    detail: str
+    quantity: int
+    image: str 
+    seller_id: int
+    seller_info: UserOut
+    class Config:
+        orm_mode = True

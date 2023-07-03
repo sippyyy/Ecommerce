@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from .routers import users, login, products
 from fastapi.middleware.cors import CORSMiddleware
-
 app = FastAPI()
+
 
 origins = [
     "http://localhost:8000",
