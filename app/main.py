@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routers import users, login, products
+from .routers import users, login, products, orders
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
@@ -19,6 +19,7 @@ app.add_middleware(
 app.include_router(users.routers)
 app.include_router(login.routers)
 app.include_router(products.routers)
+app.include_router(orders.routers)
 
 @app.get("/")
 def first():

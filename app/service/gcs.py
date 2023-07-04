@@ -20,7 +20,16 @@ class GCStorage:
         blob.upload_from_file(file.file,content_type=file.content_type)
         return f'https://storage.cloud.google.com/{self.bucket_name}/{file_path}'
     
-    def delete_file(self,bucket_name, file_path):
-        bucket = self.storage_client.get_bucket(bucket_name)
+    def delete_file(self, file_path):
+        bucket = self.storage_client.get_bucket(self.bucket_name)
         blob = bucket.blob(file_path)
         blob.delete()
+        
+    def edit_file(self, old_file_path,new_file):
+        bucket = self.storage_client.get_bucket(self.bucket_name)
+        old_blob = bucket.blob(old_file_path)
+        old_blob.delete() 
+        new_file_path = "ecommerce_sippy" + new_file.filename
+        new_blob = bucket.blob(new_file_path)
+        new_blob.upload_from_file(new_file.file,content_type=new_file.content_type)
+        return f'https://storage.cloud.google.com/{self.bucket_name}/{new_file_path}'

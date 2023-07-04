@@ -1,6 +1,6 @@
 from pydantic import BaseModel, HttpUrl
 from fastapi import Form,UploadFile,File
-from .user import UserOut
+from .user import FullUserOut
 
 
 class Product(BaseModel):
@@ -12,6 +12,14 @@ class Product(BaseModel):
     quantity: int
     image: str 
     seller_id: int
-    seller_info: UserOut
+    seller_info: FullUserOut
     class Config:
         orm_mode = True
+        
+class ProductOut(BaseModel):
+    Products: Product
+    all_ordered_qty: int
+    class Config:
+        orm_mode = True
+    
+

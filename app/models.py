@@ -30,3 +30,12 @@ class Products(Base):
     image=Column(String)
     seller_id = Column(Integer,ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
     seller_info = relationship("Users")
+    
+class Orders(Base):
+    __tablename__ = 'orders'
+    id=Column(Integer,primary_key=True)
+    order_qty = Column(Integer)
+    user_id=Column(Integer,ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    product_id=Column(Integer,ForeignKey("products.id",ondelete="CASCADE"),nullable=False)
+    created_at= Column(TIMESTAMP(timezone=True),server_default=text('now()'))
+    product_detail = relationship("Products" )
