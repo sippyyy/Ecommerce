@@ -39,3 +39,13 @@ class Orders(Base):
     product_id=Column(Integer,ForeignKey("products.id",ondelete="CASCADE"),nullable=False)
     created_at= Column(TIMESTAMP(timezone=True),server_default=text('now()'))
     product_detail = relationship("Products" )
+
+
+class Carts(Base):
+    __tablename__ = 'cart'
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
+    product_detail = relationship("Products" )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    order_qty = Column(Integer)
+    created_at = Column(TIMESTAMP(timezone=True),server_default=text('now()'))
