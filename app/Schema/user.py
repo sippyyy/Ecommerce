@@ -16,7 +16,7 @@ class Password(BaseModel):
 # REGISTER SCHEMA
 class UserIn(User):
     email: EmailStr
-    is_activated: bool
+    is_activated: bool = False
     is_seller:  bool = False
 
 # USER INFO RETURN

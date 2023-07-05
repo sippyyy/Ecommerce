@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app import models, database, oauth2
+from app import models, database, oauth2,untils
 from app.Schema.product import Product,ProductOut
-from secrets import token_hex
 from typing import List,Optional
 from app.service.gcs import GCStorage
 import os
@@ -22,7 +21,7 @@ def get_products(limit: int = 20,
                  search_type: str = "",
                  db: Session = Depends(database.get_db)):
     products = db.query(models.Products,func.sum(models.Orders.order_qty).label("all_ordered_qty")
-                        ).join(models.Orders,models.Products.id == models.Orders.product_id
+                        ).join(models.Orders,models.Products.id == models.Orders.product_id, isouter=True
                                ).group_by(models.Products.id,models.Orders.product_id,models.Orders.order_qty
                                           ).filter(models.Products.product_name.
                                                 contains(search_name)
@@ -31,6 +30,7 @@ def get_products(limit: int = 20,
                                                          ).limit(limit
                                                                  ).offset(skip
                                                                           ).all()
+    
     # print(products)
     return products
 
@@ -45,7 +45,8 @@ async def create_product(product_name: str = Form(...),
                          db: Session = Depends(database.get_db),
                          current_user=Depends(oauth2.get_current_user)):
     if not current_user.is_seller:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"You don't have permission to sell this product")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"You don't have permission to sell this product")
     image_path = GCStorage().upload_file(image)
     new_product = models.Products(
         product_name=product_name,
@@ -66,12 +67,8 @@ def delete_product(id:int,
                    db: Session = Depends(database.get_db),
                    current_user=Depends(oauth2.get_current_user)):
     product = db.query(models.Products).filter(models.Products.id == id).first()
-    if product.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"You are not allowed to delete this product")
-    if product is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Product {id} not found")
+    untils.check_user_validation(product.seller_id,current_user)
+    untils.check_if_dont_exist(product)
     file_path = os.path.basename(urllib.parse.unquote(product.image))
     GCStorage().delete_file(file_path=file_path)
     db.delete(product)
@@ -92,12 +89,8 @@ def edit_product(id:int,
                 current_user=Depends(oauth2.get_current_user)):
     product = db.query(models.Products).filter(models.Products.id == id)
     product_result = product.first()
-    if not product_result:
-        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
-                            detail = "Product not found")
-    if current_user.id != product_result.seller_id:
-        raise HTTPException(status_code = status.HTTP_403_FORBIDDEN,
-                            detail = "You are not allowed to edit this product")
+    untils.check_if_dont_exist(product_result)
+    untils.check_user_validation(product_result.seller_id,current_user)
     current_file_path = os.path.basename(urllib.parse.unquote(product_result.image))
     image_path = GCStorage().edit_file(current_file_path,image)
     product.update({"product_name":product_name,

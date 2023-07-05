@@ -1,13 +1,19 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from typing import List
-from app import database, models,oauth2
+from app import database, models,oauth2,untils
 from app.Schema import cart
+import logging
+
 
 routers = APIRouter(
     prefix='/carts',
     tags=['carts']
 )
+logging.basicConfig(level=logging.WARNING,
+                    filename="log.log",
+                    filemode='w',
+                    format='%(asctime)s- %(levelname)s- %(message)s')
 
 @routers.get('/',
              status_code= status.HTTP_200_OK,
@@ -15,6 +21,7 @@ routers = APIRouter(
 def get_cart(db : Session = Depends(database.get_db),
              current_user= Depends(oauth2.get_current_user)):
     carts = db.query(models.Carts).filter(models.Carts.user_id == current_user.id).all()
+    logging.warn(f"Carts: {carts}")
     return carts
 
 
@@ -24,12 +31,8 @@ def create_cart(cart: cart.CartIn,
                 db: Session = Depends(database.get_db),
                 current_user= Depends(oauth2.get_current_user)):
     product = db.query(models.Products).filter(models.Products.id == cart.product_id).first()
-    if not product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Product id {cart.product_id} not found")
-    if cart.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"You are not allowed to create this cart")
+    untils.check_if_dont_exist(product)
+    untils.check_user_validation(cart.user_id, current_user)
     cart_exist_product_db = db.query(models.Carts
                                     ).filter(models.Carts.product_id == cart.product_id
                                     ).filter(models.Carts.user_id == current_user.id)
@@ -53,12 +56,8 @@ def edit_cart(id:int,
               current_user= Depends(oauth2.get_current_user)):
     cart_db = db.query(models.Carts).filter(models.Carts.id == id)
     cart = cart_db.first()
-    if not cart:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Cart {id} not found")
-    if current_user.id != cart.user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
-                            detail=f"You are not allowed to edit infomation of this cart")
+    untils.check_if_dont_exist(cart)
+    untils.check_user_validation(cart.user_id, current_user)
     if data.order_qty ==0:
         db.delete(cart)
     else:
@@ -72,12 +71,8 @@ def delete_cart(id:int,
                 db :  Session = Depends(database.get_db),
                 current_user= Depends(oauth2.get_current_user)):
     cart = db.query(models.Carts).filter(models.Carts.id == id).first()
-    if not cart:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Cart not found")
-    if cart.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail= "You are not allowed to delete this cart")
+    untils.check_if_dont_exist(cart)
+    untils.check_user_validation(cart.user_id, current_user)
     db.delete(cart)
     db.commit()
     return
